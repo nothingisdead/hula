@@ -8,13 +8,14 @@ The following commands will create a `hula` app and start the development server
 $ git clone https://github.com/nothingisdead/hula.git new_app
 $ cd new_app
 $ npm install
-$ node .
+$ node
 ```
+
 In development mode (default), the server will reload any open pages when it is restarted. `nodemon` can be used to automatically restart the server on changes:
 
 ```sh
 $ npm install -g nodemon
-$ nodemon .
+$ nodemon
 ```
 
 ## Components
