@@ -76,6 +76,20 @@ export class Server {
 		// Get the url pathname and query
 		const { pathname : path, query } = parse(request.url, true);
 
+		if(path === '/' && this.settings.INITIAL_ROUTE) {
+			// Redirect to the initial route
+			response.statusCode = 301;
+
+			response.setHeader('Location', this.settings.INITIAL_ROUTE);
+			response.end();
+
+			// Create a redirect result
+			const result = { _redirect : this.settings.INITIAL_ROUTE };
+
+			// Return the redirect response
+			return Promise.resolve({ path, query, result });
+		}
+
 		// Create the response object
 		const promise = new Promise((resolve, reject) => {
 			// Check if a static file exists

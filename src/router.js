@@ -29,11 +29,29 @@ const interpolate = async (strings, ...vars) => {
 		return result;
 	});
 
+	// Router.render returns an object with id and html
+	vars = vars.map(async function format(value) {
+		// Wait for promises
+		if(value instanceof Promise) {
+			value = await value;
+		}
+
+		// Format and join arrays
+		if(value instanceof Array) {
+			value = await Promise.all(value.map(format));
+			value = value.join('');
+		}
+
+		// Format { id, html } objects (child routes)
+		if(typeof value === 'object' && value.html) {
+			value = value.html;
+		}
+
+		return value;
+	});
+
 	// Wait for the results of any Promises
 	vars = await Promise.all(vars);
-
-	// Router.render returns an object with id and html
-	vars = vars.map((value) => value.html || value);
 
 	// Interpolate the variables
 	return strings.reduce(

@@ -7,7 +7,7 @@ const context = {
 };
 
 // Restore the global rendering context if available
-if(__context) {
+if(typeof __context !== 'undefined') {
 	Object.assign(context, __context);
 }
 

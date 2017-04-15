@@ -72,7 +72,13 @@ export class Client {
 	render(route, element) {
 		render(route, this.context).then((html) => {
 			morphdom(element, html, {
-				childrenOnly : true
+				childrenOnly : true,
+
+				onBeforeElUpdated : (a, b) => {
+					if(typeof a.value === 'string' && typeof b.value === 'string') {
+						b.value = a.value;
+					}
+				},
 			});
 
 			// Register new components and remove old components
