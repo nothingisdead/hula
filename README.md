@@ -3,13 +3,19 @@ A simple, modern web app framework
 
 ## Basic Setup
 The following commands will create a `hula` app and start the development server. Your app will be served at http://localhost:3000.
+
 ```sh
 $ git clone https://github.com/nothingisdead/hula.git new_app
 $ cd new_app
 $ npm install
 $ node .
 ```
-In development mode (default), the server will restart and any open pages will be refreshed after any code changes.
+In development mode (default), the server will reload any open pages when it is restarted. `nodemon` can be used to automatically restart the server on changes:
+
+```sh
+$ npm install -g nodemon
+$ nodemon .
+```
 
 ## Components
 - Components should be created under `src/components`.
