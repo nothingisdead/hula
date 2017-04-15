@@ -73,7 +73,7 @@ export default class {
 
 ## src/components/todo/list.js
 ```js
-let items = [
+const items = [
 	{
 		title : 'Create sample hula app',
 		done  : true,
