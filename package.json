@@ -1,13 +1,13 @@
 {
   "name": "hula",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple, modern web app framework",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",
