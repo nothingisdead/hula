@@ -63,6 +63,7 @@ export default class {
 					width      : 600px;
 					height     : 400px;
 					text-align : center;
+					overflow   : auto;
 				}
 			</style>
 
