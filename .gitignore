@@ -1,3 +1,6 @@
+src/components/*
+dist/*
+
 # Logs
 logs
 *.log

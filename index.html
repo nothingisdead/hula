@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Loading</title>
+		<style type="text/css">
+			div[data-component] {
+				display : inherit;
+			}
+		</style>
+	</head>
+	<body>
+		<main>${content}</main>
+		<script>window.__context = ${JSON.stringify(context)};</script>
+		<script src="/dist/main.js"></script>
+	</body>
+</html>
