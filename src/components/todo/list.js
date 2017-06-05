@@ -1,3 +1,5 @@
+const _ = Symbol('private');
+
 const items = [
 	{
 		title : 'Create sample hula app',
@@ -15,37 +17,51 @@ export default class {
 	}
 
 	// Register event listeners for this component
-	register(component) {
-		// Handle deleting an item
-		component.addEventListener('change', (e) => {
-			if(e.target.type === 'checkbox') {
-				// Set the 'done' property
-				items[e.target.dataset.item].done = e.target.checked;
-
-				// Update the component
-				component.update();
+	register(nodes) {
+		nodes.forEach((node) => {
+			if(node[_]) {
+				return;
 			}
-		});
 
-		// Handle creating an item
-		component.addEventListener('submit', (e) => {
-			// Prevent navigation
-			e.preventDefault();
+			node[_] = true;
 
-			// Add the item
-			items.push({
-				title : component.querySelector('input').value,
-				done  : false,
+			// Handle deleting an item
+			node.addEventListener('change', (e) => {
+				if(e.target.type === 'checkbox') {
+					const root   = e.target.closest('[data-components]');
+					const client = root.client;
+
+					// Set the 'done' property
+					items[e.target.dataset.item].done = e.target.checked;
+
+					// Update the client
+					client.render();
+				}
 			});
 
-			// "Add some todos" is complete
-			items[1].done = true;
+			// Handle creating an item
+			node.addEventListener('submit', (e) => {
+				const root   = e.target.closest('[data-components]');
+				const client = root.client;
 
-			// Reset the form
-			e.target.reset();
+				// Prevent navigation
+				e.preventDefault();
 
-			// Upate the component
-			component.update();
+				// Add the item
+				items.push({
+					title : node.querySelector('input').value,
+					done  : false,
+				});
+
+				// "Add some todos" is complete
+				items[1].done = true;
+
+				// Reset the form
+				e.target.reset();
+
+				// Upate the client
+				client.render();
+			});
 		});
 	}
 

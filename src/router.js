@@ -1,7 +1,4 @@
-import { routes } from './routes.js';
-
-// Avoid registering the same component twice
-const _ = Symbol('registered');
+import { routes } from 'Routes';
 
 // Unique ID generator
 const uid = (components) => {
@@ -19,7 +16,7 @@ const interpolate = async (strings, ...vars) => {
 	// Make sure each variable is a Promise
 	vars = vars.map((result) => {
 		if(result instanceof Router) {
-			result = result.render();
+			result = result.render(null, true);
 		}
 
 		if(!(result instanceof Promise)) {
@@ -132,28 +129,38 @@ export class Router {
 	 * @param {HTMLElement} component The component
 	 */
 	register(component) {
-		if(component[_]) {
-			return;
-		}
+		const id     = component.dataset.component;
+		const parent = component.parentNode;
+		const nodes  = [];
+
+		let current = component;
+		let end     = false;
+
+		do {
+			// Get the next sibling
+			current = current.nextElementSibling;
+
+			// Check if this is the last component
+			end = end || ((current || {}).dataset || {}).componentEnd === id;
+
+			// Append the node
+			if(!end) {
+				nodes.push(current);
+			}
+		} while(!end);
 
 		if(this.instance.register) {
-			this.instance.register(component);
+			this.instance.register(nodes, () => update(component));
 		}
-
-		if(!component.update) {
-			component.update = () => update(component);
-		}
-
-		// Flag the component as registered
-		component[_] = true;
 	}
 
 	/**
 	 * Render this route for the current state
 	 * @param  {String|Promise} child The child route
+	 * @param  {Boolean}        wrap  Whether to wrap components for client-side use
 	 * @return {Promise}              A Promise that resolves with the current route
 	 */
-	async render(child) {
+	async render(child, wrap) {
 		if(child instanceof Promise) {
 			child = await child;
 		}
@@ -165,22 +172,35 @@ export class Router {
 			html = await html;
 		}
 
-		// Add this component to the global context
+		// Set up data attributes for the component
 		const components = this.context.components;
 		const id         = uid(components);
-		const set      = [ [ 'data-component', id ] ];
 
-		if(child) {
-			set.push([ 'data-child', child.id ]);
-		}
-
+		// Add the component to the global context
 		components[id] = this.route;
 
-		// Map the attributes to HTML
-		const attrs = set.map(([ k, v ]) => `${k}="${v}"`).join(' ');
-
 		// Wrap the component
-		html = `<div ${attrs}>${html}</div>`;
+		if(wrap) {
+			const set = {
+				start : [ [ 'data-component', id ] ],
+				end   : [ [ 'data-component-end', id ] ],
+			};
+
+			if(child) {
+				set.start.push([ 'data-child', child.id ]);
+			}
+
+			// Map the attributes to HTML
+			const attrs = {
+				start : set.start.map(([ k, v ]) => v ? `${k}="${v}"` : k).join(' '),
+				end   : set.end.map(([ k, v ]) => v ? `${k}="${v}"` : k).join(' '),
+			};
+
+			const start = `<span ${attrs.start}></span>`;
+			const end   = `<span ${attrs.end}></span>`;
+
+			html = `${start}${html}${end}`;
+		}
 
 		return { id, html };
 	}

@@ -13,3 +13,10 @@ if(typeof __context !== 'undefined') {
 
 const element = document.querySelector('main');
 const client  = new Client(element, context);
+
+// Handle popstate events
+if(typeof window !== 'undefined') {
+	window.addEventListener('popstate', (e) => {
+		client.render();
+	});
+}

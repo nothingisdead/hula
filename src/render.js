@@ -31,7 +31,7 @@ export async function render(route, context, parents) {
 	}
 
 	let current = route;
-	let result  = '';
+	let result  = false;
 
 	do {
 		if(Router.exists(current)) {
@@ -39,7 +39,7 @@ export async function render(route, context, parents) {
 			const instance = Router.get(current, context);
 
 			// Render the component
-			result = await instance.render(result);
+			result = await instance.render(result, parents);
 		}
 
 		// Move up to the parent route

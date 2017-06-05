@@ -1,5 +1,5 @@
 {
 	"verbose" : true,
-	"ignore"  : [ "dist/*", "src/routes.js" ],
+	"ignore"  : [ "dist/*", "src/plugins.js", "src/routes.*.js" ],
 	"ext"     : "js json html css scss"
 }

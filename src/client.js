@@ -3,11 +3,6 @@ import morphdom from 'morphdom';
 import { register, render } from './render.js';
 import { resolve } from 'path';
 
-const defaults = {
-	HOST : 'localhost',
-	PORT : 3000,
-};
-
 // Request counter
 let ctr = 0;
 
@@ -27,10 +22,6 @@ export class Client {
 		root.dataset.components = true;
 		root.client             = this;
 
-		// Register existing components
-		register(context);
-
-		this.settings = Object.assign({}, defaults, settings || {});
 		this.socket   = io(this.url);
 		this.context  = context;
 		this.root     = root;
@@ -38,8 +29,12 @@ export class Client {
 		// Keep track of reconnections
 		let connections = 0;
 
-		this.socket.on('connect', () => {
-			this.socket.emit('hello', connections++);
+		this.ready = new Promise((resolve, reject) => {
+			this.socket.on('connect', () => {
+				this.socket.emit('hello', connections++);
+			});
+
+			resolve();
 		});
 
 		// Handle "reload" messages
@@ -59,6 +54,9 @@ export class Client {
 				`Unhandled response: ${JSON.stringify({ error, result })}`
 			);
 		});
+
+		// Register existing components
+		register(context);
 	}
 
 	/**
@@ -66,12 +64,19 @@ export class Client {
 	 * @return {String} The URL
 	 */
 	get url() {
-		return `http://${this.settings.HOST}:${this.settings.PORT}`;
+		return `${document.location.protocol}//${document.location.host}`;
 	}
 
-	render(route, element) {
-		render(route, this.context).then((html) => {
-			morphdom(element, html, {
+	go(route) {
+		history.pushState(this.context, '', route);
+		this.render(route);
+	}
+
+	render(route) {
+		route = route || location.pathname;
+
+		render(route, this.context, true).then((html) => {
+			morphdom(this.root, `<div>${html}</div>`, {
 				childrenOnly : true,
 
 				onBeforeElUpdated : (a, b) => {
@@ -88,26 +93,29 @@ export class Client {
 
 	/**
 	 * Send a request to the Server
-	 * @param  {String} path  The path
-	 * @param  {Object} query The query
-	 * @return {Promise}      A Promise that resolves with a JSON-serializable object
+	 * @param  {String}  path    The path
+	 * @param  {Object}  query   The query
+	 * @param  {Boolean} parents Whether or not to render parent routes
+	 * @return {Promise}         A Promise that resolves with a JSON-serializable object
 	 */
-	request(path, query) {
+	request(path, query, parents) {
 		// Default query to {} to be consistent with HTTP
 		if(typeof query !== 'object' || query === null) {
 			query = {};
 		}
 
-		const request = { path, query };
+		const request = { path, query, parents };
 
 		request.id = ++ctr;
 
-		return new Promise((resolve, reject) => {
-			// Store the callbacks
-			callbacks[request.id] = { resolve, reject };
+		return this.ready.then(() => {
+			return new Promise((resolve, reject) => {
+				// Store the callbacks
+				callbacks[request.id] = { resolve, reject };
 
-			// Send the request
-			this.socket.emit('request', request);
+				// Send the request
+				this.socket.emit('request', request);
+			});
 		});
 	}
 };

@@ -5,6 +5,7 @@ import { parse } from 'url';
 import { resolve } from 'path';
 import { stat, readFileSync } from 'fs';
 import { render } from './render.js';
+import { plugins } from './plugins.js';
 
 const defaults = {
 	HOST        : 'localhost',
@@ -43,7 +44,7 @@ export class Server {
 	 * @return {String} The URL
 	 */
 	get url() {
-		return `http://${this.settings.HOST}:${this.settings.PORT}`;
+		return `${this.settings.HTTPS ? 'https' : 'http'}://${this.settings.HOST}:${this.settings.PORT}`;
 	}
 
 	/**
@@ -53,12 +54,12 @@ export class Server {
 	 * @return {Promise}        The response
 	 */
 	stream(socket, request) {
-		const { id, path, query } = request;
+		const { id, path, query, parents } = request;
 
 		// Create the response object
-		const response = this.request(path, query)
+		const response = this.request(path, query, parents)
 			.then((result) => Object.assign({ result }, request))
-			.catch((error) => Object.assign({ error }, request));
+			.catch((error) => Object.assign({ error : error.message }, request));
 
 		// Send the response to the client
 		response.then((response) => socket.emit('response', response));
@@ -108,7 +109,7 @@ export class Server {
 				}
 				else {
 					// Otherwise, route this request as a method call
-					return this.request(path, query)
+					return this.request(path, query, true)
 						.then((result) => {
 							if(typeof result === 'object') {
 								// JSON response
@@ -144,23 +145,50 @@ export class Server {
 
 	/**
 	 * Handle a request
-	 * @param  {String} path  The path
-	 * @param  {Object} query The query
-	 * @return {Promise}      A Promise that resolves with a JSON-serializable object
+	 * @param  {String}  path    The path
+	 * @param  {Object}  state   The global state
+	 * @param  {Boolean} parents Whether or not to render parent routes
+	 * @return {Promise}         A Promise that resolves with a JSON-serializable object
 	 */
-	request(path, query) {
-		// Create a new context
-		const context = {
-			state      : query,
-			components : {},
-		};
+	request(path, state, parents) {
+		// Execute plugins
+		let data = Promise.resolve({ path, state });
 
-		// Get the index page
-		const file = `${this.settings.WEBROOT}/index.html`;
-		const html = readFileSync(file) + '';
+		plugins.forEach((func) => {
+			data = data.then(({ path, state }) => {
+				let data = func(path, state);
 
-		// Render the index page with the component
-		return render(path, context, true).then((content) =>  eval(`\`${html}\``));
+				if(!data instanceof Promise) {
+					data = Promise.resolve(data);
+				}
+
+				return data;
+			});
+		});
+
+		// Wait for the plugins to finish
+		return data.then(({ path, state }) => {
+			// Create a new context
+			const context = {
+				state      : state,
+				components : {},
+			};
+
+			// Get the index page
+			const file = `${this.settings.WEBROOT}/index.html`;
+			const html = readFileSync(file) + '';
+
+			const result = render(path, context, parents);
+
+			if(parents) {
+				// Render the index page with the component
+				return result.then((content) =>  eval(`\`${html}\``));
+			}
+			else {
+				// Render just the component
+				return result;
+			}
+		});
 	}
 
 	/**
